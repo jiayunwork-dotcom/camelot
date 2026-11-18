@@ -202,6 +202,7 @@ class PDFHandler:
         suppress_stdout: bool = False,
         parallel: bool = False,
         layout_kwargs: dict[str, Any] | None = None,
+        continuation: str | None = None,
         **kwargs,
     ):
         """Extract tables by calling parser.get_tables on all single page PDFs.
@@ -218,13 +219,16 @@ class PDFHandler:
         layout_kwargs : dict, optional (default: {})
             A dict of `pdfminer.layout.LAParams
             <https://pdfminersix.readthedocs.io/en/latest/reference/composable.html#laparams>`_ kwargs.
+        continuation : str, optional (default: None)
+            ``None`` keeps legacy behavior; ``"auto"`` builds logical tables.
         kwargs : dict
             See camelot.read_pdf kwargs.
 
         Returns
         -------
         tables : camelot.core.TableList
-            List of tables found in PDF.
+            List of tables found in PDF. When ``continuation='auto'`` the
+            list also exposes the assembled logical tables.
 
         """
         if layout_kwargs is None:
@@ -233,7 +237,9 @@ class PDFHandler:
         tables = []
         # parser = Lattice(**kwargs) if flavor == "lattice" else Stream(**kwargs)
         parser_obj = PARSERS[flavor]
-        parser = parser_obj(debug=self.debug, **kwargs)
+        parser = parser_obj(
+            debug=self.debug, continuation=continuation, **kwargs
+        )
 
         with TemporaryDirectory() as tempdir:
             cpu_count = mp.cpu_count()
@@ -259,7 +265,20 @@ class PDFHandler:
                     )
                     tables.extend(t)
 
-        return TableList(sorted(tables))
+        # The temporary single-page PDFs are deleted when the context exits.
+        # Logical grouping and reassembly therefore work solely from the
+        # in-memory evidence and original page text lines/coordinates.
+        physical = sorted(tables)
+        table_list = TableList(physical)
+        if continuation == "auto":
+            from .continuation import build_logical_tables
+
+            # build_logical_tables only reads the physical tables; the
+            # returned TableList keeps the default extraction untouched while
+            # the derived logical tables live in logical_tables.
+            logical_tables, diagnostics = build_logical_tables(physical)
+            table_list._set_logical_tables(logical_tables, diagnostics)
+        return table_list
 
     def _parse_page(
         self, page: int, tempdir: str, parser, suppress_stdout: bool, layout_kwargs

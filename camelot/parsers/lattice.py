@@ -103,9 +103,10 @@ class Lattice(BaseParser):
         resolution=300,
         use_fallback=True,
         backend="pdfium",
+        continuation=None,
         **kwargs,
     ):
-        super().__init__("lattice")
+        super().__init__("lattice", continuation=continuation)
         self.table_regions = table_regions
         self.table_areas = table_areas
         self.process_background = process_background

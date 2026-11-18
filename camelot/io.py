@@ -20,6 +20,7 @@ def read_pdf(
     parallel=False,
     layout_kwargs=None,
     debug=False,
+    continuation=None,
     **kwargs,
 ):
     """Read PDF and return extracted tables.
@@ -47,6 +48,14 @@ def read_pdf(
     layout_kwargs : dict, optional (default: {})
         A dict of `pdfminer.layout.LAParams
         <https://pdfminersix.readthedocs.io/en/latest/reference/composable.html#laparams>`_ kwargs.
+    continuation : str, optional (default: None)
+        Cross-page logical table collection. ``None`` (the default) keeps the
+        legacy behavior and returns one physical :class:`~camelot.core.Table`
+        per detected page fragment. ``"auto"`` groups continuation fragments
+        across pages into logical tables (see
+        :attr:`camelot.core.TableList.logical_tables`) while still returning
+        every physical table unchanged. Only ``"stream"`` and ``"lattice"``
+        flavors support continuation; any other value raises ``ValueError``.
     table_areas : list, optional (default: None)
         List of table area strings of the form x1,y1,x2,y2
         where (x1, y1) -> left-top and (x2, y2) -> right-bottom
@@ -123,6 +132,16 @@ def read_pdf(
             "Unknown flavor specified."
             " Use either 'lattice', 'stream', 'network' or 'hybrid'"
         )
+    if continuation is not None and continuation != "auto":
+        raise ValueError(
+            "continuation must be None or 'auto', got "
+            f"{continuation!r}"
+        )
+    if continuation == "auto" and flavor not in ["lattice", "stream"]:
+        raise ValueError(
+            "continuation='auto' is only supported for flavor='lattice' "
+            f"and flavor='stream', got flavor={flavor!r}"
+        )
 
     with warnings.catch_warnings():
         if suppress_stdout:
@@ -136,6 +155,7 @@ def read_pdf(
             suppress_stdout=suppress_stdout,
             parallel=parallel,
             layout_kwargs=layout_kwargs,
+            continuation=continuation,
             **kwargs,
         )
         return tables

@@ -102,6 +102,7 @@ This part of the documentation begins with some background information about why
    user/how-it-works
    user/quickstart
    user/advanced
+   user/continuation
    user/faq
    user/cli
 
@@ -126,4 +127,5 @@ If you want to contribute to the project, this part of the documentation is for 
 
    dev/contributing
    dev/releasing
+   benchmark/continuation_scaling
    Changelog <https://github.com/camelot-dev/camelot/releases>

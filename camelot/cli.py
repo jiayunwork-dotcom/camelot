@@ -77,6 +77,13 @@ pass_config = click.make_pass_decorator(Config)
 )
 @click.option("-z", "--zip", is_flag=True, help="Create ZIP archive.")
 @click.option(
+    "--continuation",
+    type=click.Choice(["auto"]),
+    default=None,
+    help="Collect continuation fragments across pages into logical tables "
+    "(stream and lattice only).",
+)
+@click.option(
     "-split",
     "--split_text",
     is_flag=True,
@@ -209,6 +216,7 @@ def lattice(c, *args, **kwargs):
     f = conf.pop("format")
     compress = conf.pop("zip")
     quiet = conf.pop("quiet")
+    continuation = conf.pop("continuation")
     plot_type = kwargs.pop("plot_type")
     filepath = kwargs.pop("filepath")
     kwargs.update(conf)
@@ -231,7 +239,12 @@ def lattice(c, *args, **kwargs):
             raise click.UsageError("Please specify output file format using --format")
 
     tables = read_pdf(
-        filepath, pages=pages, flavor="lattice", suppress_stdout=quiet, **kwargs
+        filepath,
+        pages=pages,
+        flavor="lattice",
+        suppress_stdout=quiet,
+        continuation=continuation,
+        **kwargs,
     )
     click.echo(f"Found {tables.n} tables")
     if plot_type is not None:
@@ -239,7 +252,7 @@ def lattice(c, *args, **kwargs):
             plot(table, kind=plot_type)
             plt.show()
     else:
-        tables.export(output, f=f, compress=compress)
+        tables.export(output, f=f, compress=compress, logical=continuation == "auto")
 
 
 @cli.command("stream")
@@ -301,6 +314,7 @@ def stream(c, *args, **kwargs):
     f = conf.pop("format")
     compress = conf.pop("zip")
     quiet = conf.pop("quiet")
+    continuation = conf.pop("continuation")
     plot_type = kwargs.pop("plot_type")
     filepath = kwargs.pop("filepath")
     kwargs.update(conf)
@@ -338,6 +352,7 @@ def stream(c, *args, **kwargs):
         flavor="stream",
         suppress_stdout=quiet,
         layout_kwargs=layout_kwargs,
+        continuation=continuation,
         **kwargs,
     )
     click.echo(f"Found {tables.n} tables")
@@ -346,7 +361,7 @@ def stream(c, *args, **kwargs):
             plot(table, kind=plot_type)
             plt.show()
     else:
-        tables.export(output, f=f, compress=compress)
+        tables.export(output, f=f, compress=compress, logical=continuation == "auto")
 
 
 @cli.command("hybrid")

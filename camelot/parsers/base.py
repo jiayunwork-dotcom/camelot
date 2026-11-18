@@ -28,6 +28,7 @@ class BaseParser:
         shift_text=None,
         flag_size=False,
         debug=False,
+        continuation=None,
     ):
         self.id = parser_id
         self.table_regions = table_regions
@@ -41,6 +42,9 @@ class BaseParser:
         self.shift_text = shift_text
 
         self.flag_size = flag_size
+        # continuation is only honored by stream/lattice; network/hybrid
+        # reject it explicitly at read_pdf() validation time.
+        self.continuation = continuation
 
         self.rootname = None
         self.t_bbox = None
@@ -239,7 +243,31 @@ class BaseParser:
             table = self._generate_table(table_idx, bbox, cols, rows, v_s=v_s, h_s=h_s)
             _tables.append(table)
 
+        if getattr(self, "continuation", None) == "auto":
+            self._attach_continuation_evidence(_tables)
         return _tables
+
+    def _attach_continuation_evidence(self, tables):
+        """Attach cross-page evidence to every physical table.
+
+        Runs inside the page parser (also when using parallel workers).
+        Everything attached is picklable and references original PDF page
+        numbers / coordinates -- the temporary single-page PDF path is never
+        stored as evidence.
+        """
+        from ..continuation import build_fragment_context
+
+        horizontal = list(self.horizontal_text or [])
+        vertical = list(self.vertical_text or [])
+        for table in tables:
+            # Keep the full page text lines on the table so that the logical
+            # reassembly stage can re-assign text against the canonical
+            # column layout after the worker (and its temp files) are gone.
+            table._page_horizontal_text = horizontal
+            table._page_vertical_text = vertical
+            table.fragment_context = build_fragment_context(
+                table, horizontal, vertical
+            )
 
     def record_parse_metadata(self, table):
         """Record data about the origin of the table."""
@@ -292,6 +320,7 @@ class TextBaseParser(BaseParser):
         row_tol=2,
         column_tol=0,
         debug=False,
+        continuation=None,
         **kwargs,
     ):
         """Initialize the text base parser class with default values."""
@@ -303,6 +332,7 @@ class TextBaseParser(BaseParser):
             strip_text=strip_text,
             flag_size=flag_size,
             debug=debug,
+            continuation=continuation,
         )
         self.columns = columns
         self._validate_columns()

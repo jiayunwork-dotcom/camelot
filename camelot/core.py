@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import sqlite3
@@ -557,6 +558,15 @@ class Table:
         self._image = None
         self._image_path = None  # Temporary file to hold an image of the pdf
 
+        # Cross-page continuation evidence (only set when read_pdf is called
+        # with continuation='auto'); see camelot.continuation.
+        self.fragment_context = None
+        self.logical_id = None
+        # Original page text lines are attached in continuation mode so that
+        # logical reassembly never depends on deleted temp single-page files.
+        self._page_horizontal_text = None
+        self._page_vertical_text = None
+
     def __repr__(self):
         """Return a string representation of the class .
 
@@ -916,17 +926,18 @@ class _Kw(TypedDict):
 class TableList:
     """Defines a list of camelot.core.Table objects.
 
-    Each table can be accessed using its index.
-
-    Attributes
-    ----------
-    n : int
-        Number of tables in the list.
+    Each table can be accessed using its index.  The number of tables is
+    available through the :attr:`n` property.  When the PDF was read with
+    ``continuation='auto'``, the :attr:`logical_tables` and
+    :attr:`continuation_diagnostics` properties expose the cross-page
+    grouping; otherwise both are ``None``.
 
     """
 
     def __init__(self, tables: Iterable[Table]) -> None:  # noqa D105
         self._tables: Iterable[Table] = tables
+        self._logical_tables = None
+        self._continuation_diagnostics = None
 
     def __repr__(self):  # noqa D105
         return f"<{self.__class__.__name__} n={self.n}>"
@@ -952,6 +963,21 @@ class TableList:
         """The number of tables in the list."""
         return len(self)
 
+    @property
+    def logical_tables(self):
+        """Logical tables assembled by continuation='auto', or None."""
+        return self._logical_tables
+
+    @property
+    def continuation_diagnostics(self):
+        """Cross-page grouping diagnostics, or None."""
+        return self._continuation_diagnostics
+
+    def _set_logical_tables(self, logical_tables, diagnostics) -> None:
+        """Attach the result of the cross-page grouping stage."""
+        self._logical_tables = logical_tables
+        self._continuation_diagnostics = diagnostics
+
     def _write_file(self, f=None, **kwargs: Unpack[_Kw]) -> None:
         dirname = kwargs["dirname"]
         root = kwargs["root"]
@@ -974,7 +1000,71 @@ class TableList:
                 filepath = os.path.join(dirname, filename)
                 z.write(filepath, os.path.basename(filepath))
 
-    def export(self, path: str, f="csv", compress=False):
+    # -- logical export --------------------------------------------------
+
+    @staticmethod
+    def _logical_data_name(root: str, lt) -> str:
+        """Unique data file name even when two tables share a start page."""
+        first_page, first_order, _first_sub = lt.fragments[0]
+        return (
+            f"{root}-{lt.logical_id}-page-{first_page}"
+            f"-table-{first_order}"
+        )
+
+    def _write_logical(self, f, dirname, root, ext):
+        manifest = {
+            "format": f,
+            "root": root,
+            "logical_tables": [],
+            "diagnostics": self._continuation_diagnostics or [],
+        }
+        written = []
+        for lt in self._logical_tables:
+            name = self._logical_data_name(root, lt)
+            data_filename = f"{name}{ext}"
+            data_path = os.path.join(dirname, data_filename)
+            if f == "csv":
+                lt.df.to_csv(
+                    data_path,
+                    encoding="utf-8",
+                    index=False,
+                    header=False,
+                    quoting=1,
+                )
+            else:  # json
+                with open(data_path, "w", encoding="utf-8") as fh:
+                    json.dump(
+                        lt.df.values.tolist(), fh, ensure_ascii=False, indent=2
+                    )
+            manifest["logical_tables"].append(
+                {
+                    "logical_id": lt.logical_id,
+                    "data_file": data_filename,
+                    "shape": list(lt.df.shape),
+                    "fragments": [list(k) for k in lt.fragments],
+                    "columns": lt.columns,
+                    "row_sources": [rs.to_dict() for rs in lt.row_sources],
+                    "removed_headers": lt.removed_headers,
+                    "diagnostics": lt.diagnostics,
+                }
+            )
+            written.append(data_filename)
+
+        manifest_filename = f"{root}-logical-manifest.json"
+        manifest_path = os.path.join(dirname, manifest_filename)
+        with open(manifest_path, "w", encoding="utf-8") as fh:
+            json.dump(manifest, fh, ensure_ascii=False, indent=2)
+        written.append(manifest_filename)
+        return written
+
+    def _write_logical_zip(self, f, path, dirname, root, ext):
+        written = self._write_logical(f, dirname, root, ext)
+        zipname = os.path.join(os.path.dirname(path), root) + ".zip"
+        with zipfile.ZipFile(zipname, "w", allowZip64=True) as z:
+            for filename in written:
+                z.write(os.path.join(dirname, filename), filename)
+
+    def export(self, path: str, f="csv", compress=False, logical=False):
         """Export the list of tables to specified file format.
 
         Parameters
@@ -985,8 +1075,35 @@ class TableList:
             File format. Can be csv, excel, html, json, markdown or sqlite.
         compress : bool
             Whether or not to add files to a ZIP archive.
+        logical : bool, optional (default: False)
+            Export logical tables instead of physical tables.  Requires the
+            TableList to have been produced with
+            ``continuation='auto'``.  Only ``f='csv'`` and ``f='json'`` are
+            supported; a sources/diagnostics JSON manifest is written next
+            to the data files and references the data file names and
+            logical row numbers.
 
         """
+        if logical:
+            if self._logical_tables is None:
+                raise ValueError(
+                    "logical=True requires read_pdf(continuation='auto')"
+                )
+            if f not in ["csv", "json"]:
+                raise ValueError(
+                    "logical=True only supports f='csv' and f='json', "
+                    f"got f={f!r}"
+                )
+            dirname = os.path.dirname(path)
+            basename = os.path.basename(path)
+            root, ext = os.path.splitext(basename)
+            if compress:
+                tmp_dir = tempfile.mkdtemp()
+                self._write_logical_zip(f, path, tmp_dir, root, ext)
+            else:
+                self._write_logical(f, dirname, root, ext)
+            return
+
         dirname = os.path.dirname(path)
         basename = os.path.basename(path)
         root, ext = os.path.splitext(basename)

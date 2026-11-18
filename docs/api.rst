@@ -38,6 +38,27 @@ Lower-Lower-Level Classes
 
 .. autoclass:: camelot.core.Cell
 
+Cross-Page Continuation
+-----------------------
+
+When a PDF is read with ``read_pdf(..., continuation="auto")`` the returned
+:class:`~camelot.core.TableList` keeps every physical table and additionally
+exposes the assembled logical tables and grouping diagnostics.
+
+.. autoclass:: camelot.continuation.LogicalTable
+   :inherited-members:
+
+.. autoclass:: camelot.continuation.LogicalFragment
+
+.. autoclass:: camelot.continuation.FragmentContext
+   :inherited-members:
+
+.. autoclass:: camelot.continuation.RowSource
+   :inherited-members:
+
+.. autoclass:: camelot.continuation.CaptionInfo
+   :inherited-members:
+
 Plotting
 --------
 

@@ -59,6 +59,7 @@ class Stream(TextBaseParser):
         edge_tol=50,
         row_tol=2,
         column_tol=0,
+        continuation=None,
         **kwargs,
     ):
         super().__init__(
@@ -73,6 +74,7 @@ class Stream(TextBaseParser):
             edge_tol=edge_tol,
             row_tol=row_tol,
             column_tol=column_tol,
+            continuation=continuation,
         )
         self.textedges = []
 

@@ -54,3 +54,8 @@ dmypy.json
 
 # OSX Files
 .DS_Store
+
+# Local virtual environment and generated test artifacts
+.venv/
+/tests/generated/
+/benchmark/out/
