@@ -136,10 +136,18 @@ def apply_region_mask(threshold, regions):
         The masked threshold image.
     """
     if regions is not None:
+        height, width = threshold.shape[:2]
         region_mask = np.zeros(threshold.shape, dtype=np.uint8)
         for region in regions:
             x, y, w, h = region
-            region_mask[y : y + h, x : x + w] = 1
+            # Clamp to the image: a region may extend past the visible page
+            # after cropping.  numpy slicing would otherwise wrap around.
+            x0 = max(0, min(int(x), width))
+            y0 = max(0, min(int(y), height))
+            x1 = max(0, min(int(x) + int(w), width))
+            y1 = max(0, min(int(y) + int(h), height))
+            if x1 > x0 and y1 > y0:
+                region_mask[y0:y1, x0:x1] = 1
         threshold = np.multiply(threshold, region_mask)
 
     return threshold
@@ -258,9 +266,18 @@ def find_joints(contours, vertical, horizontal):
     """
     joints = np.multiply(vertical, horizontal)
     tables = {}
+    height, width = joints.shape[:2]
     for c in contours:
         x, y, w, h = c
-        roi = joints[y : y + h, x : x + w]
+        # Clamp manually: cropped/user areas may extend past the image and
+        # negative or oversized indices would silently select the wrong pixels.
+        x0 = max(0, min(int(x), width))
+        y0 = max(0, min(int(y), height))
+        x1 = max(0, min(int(x) + int(w), width))
+        y1 = max(0, min(int(y) + int(h), height))
+        if x1 <= x0 or y1 <= y0:
+            continue
+        roi = joints[y0:y1, x0:x1]
         jc, __ = cv2.findContours(
             roi.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE
         )
@@ -269,7 +286,7 @@ def find_joints(contours, vertical, horizontal):
         joint_coords = []
         for j in jc:
             jx, jy, jw, jh = cv2.boundingRect(j)
-            c1, c2 = x + (2 * jx + jw) // 2, y + (2 * jy + jh) // 2
+            c1, c2 = x0 + (2 * jx + jw) // 2, y0 + (2 * jy + jh) // 2
             joint_coords.append((c1, c2))
         tables[(x, y + h, x + w, y)] = joint_coords
 

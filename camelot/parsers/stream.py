@@ -98,9 +98,9 @@ class Stream(TextBaseParser):
         self.textedges.extend(relevant_textedges)
         # guess table areas using textlines and relevant edges
         table_bbox = textedges.get_table_areas(textlines, relevant_textedges)
-        # treat whole page as table area if no table areas found
+        # treat whole (visible) page as table area if no table areas found
         if not table_bbox:
-            table_bbox = {(0, 0, self.pdf_width, self.pdf_height): None}
+            table_bbox = {self.geometry.visible_bbox: None}
 
         return table_bbox
 

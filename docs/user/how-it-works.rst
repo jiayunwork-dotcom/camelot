@@ -72,7 +72,7 @@ Let's see how Lattice processes the second page of `this PDF`_, step-by-step.
     :scale: 50%
     :align: center
 
-4. Since dimensions of the PDF page and its image vary, the detected table boundaries, line intersections, and line segments are scaled and translated to the PDF page's coordinate space, and a representation of the table is created.
+4. Since dimensions of the PDF page and its image vary, the detected table boundaries, line intersections, and line segments are scaled and translated to the PDF page's coordinate space, and a representation of the table is created. Camelot keeps all coordinates in the *uncropped* page frame: the frame of the same page with its ``CropBox`` removed while keeping its rotation and ``MediaBox``. A cropped page therefore reports the same coordinates as an uncropped copy, so ``table_areas`` / ``table_regions`` can be reused unchanged. See :ref:`cropped-pages` for details.
 
 .. image:: ../_static/png/table.png
     :height: 674
@@ -134,3 +134,36 @@ The hybrid parser aims to combine the strengths of the Network parser (identifyi
 1. Hybrid calls both parsers, to get a) the standard table parse, b) the coordinates of the rows and columns boundaries, and c) the table boundaries (or contour).
 
 2. If there are areas in the document where both lattice and network found a table, the hybrid parser uses the results from network, but enhances them based on the rows/columns boundaries identified by lattice in the area. Because lattice uses the solid lines detected on the document, the coordinates for b) and c) detected by Lattice are generally more precise. See the "_merge_bbox_analysis" method.
+
+.. _cropped-pages:
+
+Pages with a CropBox
+--------------------
+
+A PDF page may define a visible area (``CropBox``) that is smaller than its
+``MediaBox``.  PDF viewers, and therefore the image backends Camelot uses for
+line detection, only draw the visible area.  PDFMiner, on the other hand, lays
+out the whole ``MediaBox``.  Without care, the two layers disagree and the
+extracted table, its cell values and the debugging overlays end up at different
+places.
+
+Camelot resolves the page geometry once per page and uses it for both layers.
+The rule is simple:
+
+* All reported coordinates (table bounding boxes, rows, columns, joints, line
+  segments, ``table_areas`` / ``table_regions``) live in the **uncropped page
+  frame**.  That is the frame of the same page with the ``CropBox`` removed,
+  keeping its rotation and ``MediaBox``.  Cropping therefore only hides
+  content; it never moves the coordinates you pass in or get back.
+* Only the visible part of the page is rasterised and analysed.  Line
+  detection, the rendered image used by ``camelot.plot``, and the text used to
+  fill cells are all restricted to the visible area, so text hidden by the crop
+  can neither create table areas nor leak into cells.
+* The rendering is done by PDFium on the visible page only; the geometry layer
+  maps between the visible raster and the uncropped frame
+  (:mod:`camelot.page_geometry`).
+
+This means the same ``table_areas`` / ``table_regions`` coordinates work on the
+cropped page and on an uncropped copy of it, as long as the table itself is
+fully visible.  The same holds when the page is rotated or its ``MediaBox``
+does not start at ``(0, 0)``.

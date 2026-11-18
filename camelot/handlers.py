@@ -16,6 +16,8 @@ from pypdf import PdfWriter
 from pypdf._utils import StrByteType
 
 from .core import TableList
+from .page_geometry import PageGeometry
+from .page_geometry import filter_objects_in_bbox
 from .parsers import Hybrid
 from .parsers import Lattice
 from .parsers import Network
@@ -130,6 +132,7 @@ class PDFHandler:
         list[LTChar],
         list[LTTextLineHorizontal],
         list[LTTextLineVertical],
+        PageGeometry,
     ]:
         """Saves specified page from PDF into a temporary directory.
 
@@ -150,9 +153,15 @@ class PDFHandler:
         dimensions : tuple
             The dimensions of the pdf page
 
-        filepath : str
-            The path of the single page PDF - either the original, or a
-            normalized version.
+        images : list
+        chars : list
+        horizontal_text : list
+        vertical_text : list
+        geometry : PageGeometry
+            The geometry of the page that was actually written to disk (after
+            the optional rotation normalisation).  Text outside the visible
+            page has already been removed from ``horizontal_text`` /
+            ``vertical_text``.
 
         """
         infile = PdfReader(filepath, strict=False)
@@ -165,6 +174,7 @@ class PDFHandler:
         outfile.add_page(p)
         with open(fpath, "wb") as f:
             outfile.write(f)
+        final_page = p
         layout, dimensions = get_page_layout(fpath, **layout_kwargs)
         # fix rotated PDF
         images, chars, horizontal_text, vertical_text = get_image_char_and_text_objects(
@@ -193,8 +203,33 @@ class PDFHandler:
                 get_image_char_and_text_objects(layout)
             )
             instream.close()
-            return layout, dimensions, images, chars, horizontal_text, vertical_text
-        return layout, dimensions, images, chars, horizontal_text, vertical_text
+            final_page = p
+
+        # Resolve the page geometry once, from the page that both PDFMiner and
+        # the rasteriser will read.  Geometry maps between the layout frame
+        # (uncropped page, rotation applied) and the visible raster.
+        geometry = PageGeometry.from_page(final_page)
+        # PDFMiner lays out the whole MediaBox; when the page is cropped, drop
+        # text that is not on the visible page so it cannot influence
+        # detection or fill cells.  On an uncropped page the visible area *is*
+        # the layout frame, so filtering is a no-op; skipping it keeps the
+        # legacy behaviour of tolerating text that overflows the MediaBox.
+        if geometry.is_cropped:
+            horizontal_text = filter_objects_in_bbox(
+                horizontal_text, geometry.visible_bbox
+            )
+            vertical_text = filter_objects_in_bbox(
+                vertical_text, geometry.visible_bbox
+            )
+        return (
+            layout,
+            dimensions,
+            images,
+            chars,
+            horizontal_text,
+            vertical_text,
+            geometry,
+        )
 
     def parse(
         self,
@@ -303,7 +338,7 @@ class PDFHandler:
             List of tables found in PDF.
 
         """
-        layout, dimensions, images, chars, horizontal_text, vertical_text = (
+        layout, dimensions, images, chars, horizontal_text, vertical_text, geometry = (
             self._save_page(self.filepath, page, tempdir, **layout_kwargs)
         )
         page_path = os.path.join(tempdir, f"page-{page}.pdf")
@@ -316,6 +351,7 @@ class PDFHandler:
             horizontal_text,
             vertical_text,
             layout_kwargs=layout_kwargs,
+            geometry=geometry,
         )
         tables = parser.extract_tables()
         return tables

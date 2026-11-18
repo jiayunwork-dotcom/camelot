@@ -105,7 +105,15 @@ def draw_pdf(table, ax):
     ax : matplotlib.axes.Axes (optional)
     """
     img = table.get_pdf_image()
-    ax.imshow(img, extent=(0, table.pdf_size[0], 0, table.pdf_size[1]))
+    if table.pdf_size and table.page_geometry is not None:
+        # The raster only contains the visible page.  Place it at the
+        # visible-page extents (in the same layout frame as the parsed
+        # coordinates) so that the image and overlays coincide.
+        x0, y0, x1, y1 = table.page_geometry.visible_bbox
+    else:
+        x0, y0 = 0, 0
+        x1, y1 = table.pdf_size
+    ax.imshow(img, extent=(x0, x1, y0, y1))
 
 
 def draw_parse_constraints(table, ax):

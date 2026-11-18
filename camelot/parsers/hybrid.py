@@ -102,6 +102,7 @@ class Hybrid(BaseParser):
         horizontal_text,
         vertical_text,
         layout_kwargs,
+        geometry=None,
     ):
         """Call this method to prepare the page parsing .
 
@@ -117,6 +118,8 @@ class Hybrid(BaseParser):
             [description]
         layout_kwargs : [type]
             [description]
+        geometry : PageGeometry, optional
+            Shared page geometry (visible page area after cropping).
         """
         super().prepare_page_parse(
             filename,
@@ -127,6 +130,7 @@ class Hybrid(BaseParser):
             horizontal_text,
             vertical_text,
             layout_kwargs,
+            geometry=geometry,
         )
         self.network_parser.prepare_page_parse(
             filename,
@@ -137,6 +141,7 @@ class Hybrid(BaseParser):
             horizontal_text,
             vertical_text,
             layout_kwargs,
+            geometry=self.geometry,
         )
         self.lattice_parser.prepare_page_parse(
             filename,
@@ -147,6 +152,7 @@ class Hybrid(BaseParser):
             horizontal_text,
             vertical_text,
             layout_kwargs,
+            geometry=self.geometry,
         )
 
     def _generate_columns_and_rows(self, bbox, table_idx):

@@ -7,6 +7,7 @@ import warnings
 import pandas as pd
 
 from ..core import Table
+from ..page_geometry import PageGeometry
 from ..utils import bbox_from_str
 from ..utils import compute_accuracy
 from ..utils import compute_whitespace
@@ -75,6 +76,7 @@ class BaseParser:
         horizontal_text,
         vertical_text,
         layout_kwargs,
+        geometry=None,
     ):
         """Prepare the page for parsing."""
         self.filename = filename
@@ -86,6 +88,11 @@ class BaseParser:
         self.horizontal_text = horizontal_text
         self.vertical_text = vertical_text
         self.pdf_width, self.pdf_height = self.dimensions
+        # Geometry of the page shared by the text and raster layers.  When it
+        # is not supplied (direct parser use), fall back to an uncropped page.
+        if geometry is None:
+            geometry = PageGeometry.full_page(self.pdf_width, self.pdf_height)
+        self.geometry = geometry
         self.rootname, __ = os.path.splitext(self.filename)
 
         if self.parse_details is not None:
@@ -296,6 +303,9 @@ class BaseParser:
 
         table.whitespace = compute_whitespace(data)
         table.pdf_size = (self.pdf_width, self.pdf_height)
+        # The visible page area in the text/layout frame.  Plotting uses it to
+        # place the rendered (visible-only) page under the parsed geometry.
+        table.page_geometry = self.geometry
 
         _text = []
         _text.extend([(t.x0, t.y0, t.x1, t.y1) for t in self.horizontal_text])

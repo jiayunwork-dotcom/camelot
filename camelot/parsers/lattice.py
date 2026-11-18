@@ -10,10 +10,10 @@ from ..image_processing import adaptive_threshold
 from ..image_processing import find_contours
 from ..image_processing import find_joints
 from ..image_processing import find_lines
+from ..page_geometry import image_to_pdf_tables
+from ..page_geometry import pdf_to_image_area
 from ..utils import build_file_path_in_temp_dir
 from ..utils import merge_close_lines
-from ..utils import scale_image
-from ..utils import scale_pdf
 from ..utils import segments_in_bbox
 from ..utils import text_in_bbox_per_axis
 from .base import BaseParser
@@ -223,8 +223,15 @@ class Lattice(BaseParser):
                 y1 = float(y1)
                 x2 = float(x2)
                 y2 = float(y2)
-                x1, y1, x2, y2 = scale_pdf((x1, y1, x2, y2), image_scalers)
-                scaled_areas.append((x1, y1, abs(x2 - x1), abs(y2 - y1)))
+                # Do not clip: a caller-provided area keeps its own
+                # coordinates as the table bounding box (legacy behaviour),
+                # even when part of it lies outside the visible page.  Line
+                # detection clamps the region/ROI to the raster instead.
+                image_area = pdf_to_image_area(
+                    (x1, y1, x2, y2), self.geometry, image_size, clip=False
+                )
+                if image_area is not None:
+                    scaled_areas.append(image_area)
             return scaled_areas
 
         self.image_path = build_file_path_in_temp_dir(
@@ -239,14 +246,10 @@ class Lattice(BaseParser):
             c=self.threshold_constant,
         )
 
-        image_width = self.pdf_image.shape[1]
-        image_height = self.pdf_image.shape[0]
-        image_width_scaler = image_width / float(self.pdf_width)
-        image_height_scaler = image_height / float(self.pdf_height)
-        pdf_width_scaler = self.pdf_width / float(image_width)
-        pdf_height_scaler = self.pdf_height / float(image_height)
-        image_scalers = (image_width_scaler, image_height_scaler, self.pdf_height)
-        pdf_scalers = (pdf_width_scaler, pdf_height_scaler, image_height)
+        image_size = (self.pdf_image.shape[1], self.pdf_image.shape[0])
+        self.image_size = image_size
+        if image_size[0] <= 0 or image_size[1] <= 0:
+            raise ValueError(f"Could not render page {self.rootname}")
 
         if self.table_areas is None:
             regions = None
@@ -288,7 +291,13 @@ class Lattice(BaseParser):
             table_bbox = find_joints(areas, vertical_mask, horizontal_mask)
 
         [self.table_bbox_parses, self.vertical_segments, self.horizontal_segments] = (
-            scale_image(table_bbox, vertical_segments, horizontal_segments, pdf_scalers)
+            image_to_pdf_tables(
+                table_bbox,
+                vertical_segments,
+                horizontal_segments,
+                self.geometry,
+                image_size,
+            )
         )
 
         for bbox, parse in self.table_bbox_parses.items():
