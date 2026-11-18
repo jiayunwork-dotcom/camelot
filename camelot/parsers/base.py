@@ -198,12 +198,23 @@ class BaseParser:
                 if len(indices) > 0:
                     if indices[0][:2] != (-1, -1):
                         pos_errors.append(error)
+                        self._record_raw_text_assignment(
+                            table, indices, t, direction
+                        )
                         indices = type(self)._reduce_index(
                             table, indices, shift_text=self.shift_text
                         )
                         for r_idx, c_idx, text in indices:
                             table.cells[r_idx][c_idx].text = text
         return pos_errors
+
+    def _record_raw_text_assignment(self, table, indices, textline, direction):
+        """Record a text assignment before ``shift_text`` is applied.
+
+        The default implementation does nothing.  Parsers that expose a
+        structural view (lattice) override it so the view never depends on
+        the flat-matrix ``shift_text``/``copy_text`` adjustments.
+        """
 
     def _generate_columns_and_rows(self, bbox, user_cols):
         # Pure virtual, must be defined by the derived parser

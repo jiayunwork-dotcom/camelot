@@ -103,6 +103,7 @@ This part of the documentation begins with some background information about why
    user/quickstart
    user/advanced
    user/continuation
+   user/structure
    user/faq
    user/cli
 

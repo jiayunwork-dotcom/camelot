@@ -156,6 +156,12 @@ class Hybrid(BaseParser):
     def _generate_table(self, table_idx, bbox, cols, rows, **kwargs):
         parser = self.table_bbox_parses[bbox]
         table = parser._generate_table(table_idx, bbox, cols, rows, **kwargs)
+        # Hybrid rows/columns are rewritten after extraction (empty rows and
+        # columns are dropped), so lattice grid coordinates no longer describe
+        # this table.  The structural view is only offered for plain physical
+        # lattice tables; make that explicit instead of returning stale spans.
+        table._structure_evidence = None
+        table._raw_text_cells = None
         # Because hybrid can inject extraneous splits from both lattice and
         # network, remove lines / cols that are completely empty.
         table.df = table.df.replace("", np.nan)

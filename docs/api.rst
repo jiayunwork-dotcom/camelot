@@ -59,6 +59,27 @@ exposes the assembled logical tables and grouping diagnostics.
 .. autoclass:: camelot.continuation.CaptionInfo
    :inherited-members:
 
+Merged Cell Structure (Lattice)
+-------------------------------
+
+Physical lattice tables expose a lazy structural view of merged regions via
+``Table.structure``; :meth:`~camelot.core.Table.to_html` and
+:meth:`~camelot.core.Table.to_excel` accept ``keep_merges=True`` to export it.
+
+.. autoclass:: camelot.structure.TableStructure
+   :inherited-members:
+
+.. autoclass:: camelot.structure.StructuralCell
+   :inherited-members:
+
+.. autoclass:: camelot.structure.TextSource
+   :inherited-members:
+
+.. autoclass:: camelot.structure.StructureDiagnostic
+   :inherited-members:
+
+.. autoexception:: camelot.structure.StructureUnavailableError
+
 Plotting
 --------
 

@@ -555,6 +555,14 @@ class Table:
         self.parse = None  # Parse information
         self.parse_details = None  # Field holding debug data
 
+        # Evidence recorded by the lattice parser for the structural cell view
+        # (merged regions).  ``_raw_text_cells`` keeps the text assignment made
+        # *before* shift_text/copy_text so that the structural view does not
+        # depend on those flat-matrix adjustments.
+        self._structure_evidence = None
+        self._raw_text_cells = None
+        self._structure = None
+
         self._image = None
         self._image_path = None  # Temporary file to hold an image of the pdf
 
@@ -619,6 +627,27 @@ class Table:
             "page": self.page,
         }
         return report
+
+    @property
+    def structure(self):
+        """Structural (merged cell) view of a physical lattice table.
+
+        The view is computed once, lazily, from the line segments and the
+        pre-``shift_text`` text assignment recorded during page parsing.  It
+        never reads or modifies ``df``/``cells``, so ``shift_text`` and
+        ``copy_text`` do not change it.  Only physical tables produced by the
+        lattice parser expose it; other tables raise
+        :class:`~camelot.structure.StructureUnavailableError` with the reason.
+
+        Returns
+        -------
+        camelot.structure.TableStructure
+        """
+        if self._structure is None:
+            from .structure import build_table_structure
+
+            self._structure = build_table_structure(self)
+        return self._structure
 
     def get_pdf_image(self):
         """Compute pdf image and cache it."""
@@ -847,7 +876,7 @@ class Table:
         with open(path, "w") as f:
             f.write(json_string)
 
-    def to_excel(self, path, **kwargs):
+    def to_excel(self, path, keep_merges=False, **kwargs):
         """Write Table(s) to an Excel file.
 
         For kwargs, check :meth:`pandas.DataFrame.to_excel`.
@@ -856,15 +885,37 @@ class Table:
         ----------
         path : str
             Output filepath.
+        keep_merges : bool, optional (default: False)
+            When True, write the structural view instead of the flat
+            :attr:`df`: merged regions become real Excel merged ranges with
+            the anchor text only.  Requires a physical lattice table with the
+            structural view available.
 
         """
-        kw = {"encoding": "utf-8"}
-        sheet_name = f"page-{self.page}-table-{self.order}"
-        kw.update(kwargs)
-        writer = pd.ExcelWriter(path)
-        self.df.to_excel(writer, sheet_name=sheet_name, **kw)
+        if keep_merges:
+            from .structure import write_structure_excel
 
-    def to_html(self, path, **kwargs):
+            if kwargs:
+                unknown = ", ".join(sorted(kwargs))
+                raise TypeError(
+                    "keep_merges=True does not support the following "
+                    f"DataFrame.to_excel options: {unknown}"
+                )
+            sheet_name = f"page-{self.page}-table-{self.order}"
+            write_structure_excel(
+                self.structure,
+                path,
+                sheet_name,
+            )
+            return
+
+        sheet_name = f"page-{self.page}-table-{self.order}"
+        # ``encoding`` is not an Excel option and recent pandas versions reject
+        # it; closing the writer flushes the workbook.
+        with pd.ExcelWriter(path) as writer:
+            self.df.to_excel(writer, sheet_name=sheet_name, **kwargs)
+
+    def to_html(self, path, keep_merges=False, **kwargs):
         """Write Table(s) to an HTML file.
 
         For kwargs, check :meth:`pandas.DataFrame.to_html`.
@@ -873,8 +924,35 @@ class Table:
         ----------
         path : str
             Output filepath.
+        keep_merges : bool, optional (default: False)
+            When True, write the structural view instead of the flat
+            :attr:`df`, using real ``rowspan``/``colspan`` attributes with the
+            anchor text only.  Requires a physical lattice table with the
+            structural view available.
 
         """
+        if keep_merges:
+            from .structure import render_structure_html
+
+            classes = kwargs.pop("classes", None)
+            border = kwargs.pop("border", 1)
+            escape = kwargs.pop("escape", True)
+            if kwargs:
+                unknown = ", ".join(sorted(kwargs))
+                raise TypeError(
+                    "keep_merges=True does not support the following "
+                    f"DataFrame.to_html options: {unknown}"
+                )
+            html_string = render_structure_html(
+                self.structure,
+                classes=classes,
+                border=border,
+                escape=escape,
+            )
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(html_string)
+            return
+
         html_string = self.df.to_html(**kwargs)
         with open(path, "w", encoding="utf-8") as f:
             f.write(html_string)

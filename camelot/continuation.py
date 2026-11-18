@@ -1250,6 +1250,25 @@ class LogicalTable:
             "columns": list(self.columns),
         }
 
+    @property
+    def structure(self):
+        """Always raise: logical tables have no single-page grid evidence.
+
+        The structural cell view is defined for one physical lattice table
+        drawn on one page.  A logical table may join fragments from several
+        pages with different column layouts, so no single grid (and no single
+        page/order pair) describes it.  Inspect the physical fragments
+        instead: ``read_pdf(..., continuation='auto')`` still returns every
+        physical table, each of which exposes ``Table.structure``.
+        """
+        from .structure import StructureUnavailableError
+
+        raise StructureUnavailableError(
+            "Logical tables have no structural cell view: it is only available"
+            " for single-page physical lattice tables. Inspect the physical"
+            " fragments returned by read_pdf() instead."
+        )
+
 
 @dataclass
 class RowSource:

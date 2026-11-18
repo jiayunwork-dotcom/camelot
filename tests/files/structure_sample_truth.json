@@ -1,0 +1,402 @@
+{
+  "generator": "tests/continuation/generate_structure_pdf.py",
+  "page_size": [
+    595.2755905511812,
+    841.8897637795277
+  ],
+  "shape": [
+    9,
+    6
+  ],
+  "x_edges": [
+    30.0,
+    118.0,
+    206.0,
+    294.0,
+    382.0,
+    470.0,
+    558.0
+  ],
+  "y_edges": [
+    790.0,
+    718.0,
+    646.0,
+    574.0,
+    502.0,
+    430.0,
+    358.0,
+    286.0,
+    214.0,
+    142.0
+  ],
+  "regions": [
+    {
+      "row": 0,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 5,
+      "text": "Regional Enrollment Summary",
+      "sources": 1,
+      "kind": "merged"
+    },
+    {
+      "row": 0,
+      "col": 5,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "",
+      "sources": 0,
+      "kind": "empty"
+    },
+    {
+      "row": 1,
+      "col": 0,
+      "rowspan": 2,
+      "colspan": 1,
+      "text": "Region",
+      "sources": 1,
+      "kind": "merged"
+    },
+    {
+      "row": 1,
+      "col": 1,
+      "rowspan": 1,
+      "colspan": 2,
+      "text": "Coverage",
+      "sources": 1,
+      "kind": "merged"
+    },
+    {
+      "row": 1,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Plan",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 1,
+      "col": 4,
+      "rowspan": 1,
+      "colspan": 2,
+      "text": "Notes",
+      "sources": 1,
+      "kind": "merged"
+    },
+    {
+      "row": 2,
+      "col": 1,
+      "rowspan": 1,
+      "colspan": 2,
+      "text": "Lives",
+      "sources": 1,
+      "kind": "merged"
+    },
+    {
+      "row": 2,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Alpha",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 2,
+      "col": 4,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "10",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 2,
+      "col": 5,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "ok",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 3,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "North",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 3,
+      "col": 1,
+      "rowspan": 2,
+      "colspan": 2,
+      "text": "Combined Block",
+      "sources": 1,
+      "kind": "merged"
+    },
+    {
+      "row": 3,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Beta",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 3,
+      "col": 4,
+      "rowspan": 2,
+      "colspan": 2,
+      "text": "DUP",
+      "sources": 2,
+      "kind": "merged"
+    },
+    {
+      "row": 4,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Mid",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 4,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Gamma",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 5,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Break",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 5,
+      "col": 1,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Left",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 5,
+      "col": 2,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Right",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 5,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "",
+      "sources": 0,
+      "kind": "empty"
+    },
+    {
+      "row": 5,
+      "col": 4,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Tail",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 5,
+      "col": 5,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "",
+      "sources": 0,
+      "kind": "empty"
+    },
+    {
+      "row": 6,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "Conflict",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 6,
+      "col": 1,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "L-A",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 6,
+      "col": 2,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "L-B",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 6,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "x",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 6,
+      "col": 4,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "y",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 6,
+      "col": 5,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "z",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 7,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "South",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 7,
+      "col": 1,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "L-C",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 7,
+      "col": 2,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "L-D",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 7,
+      "col": 3,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "p",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 7,
+      "col": 4,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "q",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 7,
+      "col": 5,
+      "rowspan": 1,
+      "colspan": 1,
+      "text": "r",
+      "sources": 1,
+      "kind": "cell"
+    },
+    {
+      "row": 8,
+      "col": 0,
+      "rowspan": 1,
+      "colspan": 6,
+      "text": "Source: generated sample",
+      "sources": 1,
+      "kind": "merged"
+    }
+  ],
+  "expected_diagnostics": {
+    "partial_seam": [
+      {
+        "orientation": "vertical",
+        "row": 5,
+        "col": 2,
+        "between": [
+          [
+            5,
+            1
+          ],
+          [
+            5,
+            2
+          ]
+        ]
+      }
+    ],
+    "non_rectangular_component": {
+      "positions": [
+        [
+          6,
+          1
+        ],
+        [
+          6,
+          2
+        ],
+        [
+          7,
+          1
+        ]
+      ],
+      "bounding_box": [
+        6,
+        1,
+        7,
+        2
+      ]
+    }
+  },
+  "short_break": {
+    "row": 5,
+    "left_col": 1,
+    "right_col": 2
+  },
+  "duplicate_region": {
+    "row": 3,
+    "col": 4,
+    "rowspan": 2,
+    "colspan": 2,
+    "text": "DUP"
+  }
+}

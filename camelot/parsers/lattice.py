@@ -214,6 +214,30 @@ class Lattice(BaseParser):
         table._image = self.pdf_image  # Reuse the image used for calc
         table._segments = (self.vertical_segments, self.horizontal_segments)
 
+    def _record_raw_text_assignment(self, table, indices, textline, direction):
+        """Remember the text assignment made before ``shift_text`` runs.
+
+        The structural view uses this evidence so that ``shift_text`` and
+        ``copy_text`` only affect the flat matrix, never the merged regions.
+        """
+        if not hasattr(table, "_raw_text_cells") or table._raw_text_cells is None:
+            table._raw_text_cells = []
+        for r_idx, c_idx, text in indices:
+            table._raw_text_cells.append(
+                {
+                    "row": int(r_idx),
+                    "col": int(c_idx),
+                    "text": text,
+                    "bbox": (
+                        float(textline.x0),
+                        float(textline.y0),
+                        float(textline.x1),
+                        float(textline.y1),
+                    ),
+                    "direction": direction,
+                }
+            )
+
     def _generate_table_bbox(self):
         def scale_areas(areas):
             scaled_areas = []
@@ -364,6 +388,16 @@ class Lattice(BaseParser):
         table = table.set_edges(v_s, h_s, joint_tol=self.joint_tol)
         # set table border edges to True
         table = table.set_border()
+
+        # Evidence for the structural (merged cell) view.  Only the physical
+        # lattice table keeps it; the view is computed lazily on access.
+        table._structure_evidence = {
+            "joint_tol": float(self.joint_tol),
+            "line_tol": float(self.line_tol),
+            "vertical_segments": list(v_s),
+            "horizontal_segments": list(h_s),
+        }
+        table._raw_text_cells = []
 
         self.record_parse_metadata(table)
         return table
